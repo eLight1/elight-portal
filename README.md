@@ -71,6 +71,45 @@ npx wrangler deploy
 
 The Cloudflare adapter provisions the default `SESSION` Workers KV binding for Astro sessions. If your Cloudflare project requires an explicit binding, add the namespace ID to `wrangler.jsonc` using the `SESSION` binding name.
 
+## Google Sheets service tickets
+
+The protected `/dashboard` route loads active tickets on the server after the session guard has confirmed the signed-in user. The browser never receives Google credentials, service-account keys, or an unfiltered spreadsheet response. Rows are filtered by the authenticated user's email before ticket data is passed to the dashboard component.
+
+### 1. Prepare the spreadsheet
+
+Create or use a Google Sheet, add a tab named `Service_Tickets`, and share the spreadsheet with the service-account email as a **Viewer**. The first row must contain these columns:
+
+- `Ticket_ID`
+- `Service_Name`
+- `Status_Step` — `1`, `2`, or `3`
+- One email column: `Client_Email`, `Customer_Email`, `Contact_Email`, `User_Email`, or `Email`
+
+Optional columns include `Status`, `Description`, and `Updated_At`. Rows with a status of `closed`, `cancelled`, `complete`, or `resolved` are excluded. The dashboard uses the first active row for the authenticated email and maps `Status_Step` to the progress bar and timeline.
+
+### 2. Configure the Sheets service account
+
+Enable the Google Sheets API in the same Google Cloud project as the service account. Add these values to `.dev.vars` for local development:
+
+```text
+GOOGLE_SHEET_ID="your-spreadsheet-id"
+GOOGLE_SHEET_TAB="Service_Tickets"
+GOOGLE_SERVICE_ACCOUNT_EMAIL="sheets-reader@your-project.iam.gserviceaccount.com"
+GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="your-full-service-account-private-key"
+```
+
+The private key is a server-only secret. Keep the complete PEM value in `.dev.vars`; do not place it in `src/`, browser code, `public/`, or `wrangler.jsonc`. The loader accepts the escaped-newline format commonly returned by service-account JSON files.
+
+For production, add the same values as Worker secrets:
+
+```sh
+npx wrangler secret put GOOGLE_SHEET_ID
+npx wrangler secret put GOOGLE_SHEET_TAB
+npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_EMAIL
+npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+```
+
+`GOOGLE_SHEET_TAB` defaults to `Service_Tickets` when omitted. If the account is not configured or the Sheets request fails, the dashboard safely renders the no-active-ticket Welcome state and logs only a generic server-side error.
+
 ## Authentication routes
 
 - `/login` — public Google sign-in page

@@ -2,26 +2,59 @@
 import Icon from '../components/Icon.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import type { PortalUser } from '../lib/auth';
+import type { ServiceTicket } from '../lib/google-sheets';
 
 interface Props {
   user: PortalUser;
+  ticket?: ServiceTicket | null;
+  ticketsCount?: number;
   preview?: boolean;
 }
 
-const { user, preview = false } = Astro.props;
+const { user, ticket = null, ticketsCount = ticket ? 1 : 0, preview = false } = Astro.props;
 const firstName = user.name.split(' ')[0] || 'there';
+const statusStep = ticket?.statusStep ?? 1;
+const statusLabel = ticket?.status || ({ 1: 'Received', 2: 'In progress', 3: 'Resolution ready' } as const)[statusStep];
+const statusSteps = [
+  { step: 1, label: 'Received' },
+  { step: 2, label: 'Assessment' },
+  { step: 3, label: 'Resolution' }
+];
+const progressPercent = `${Math.round((statusStep / 3) * 100)}%`;
 
 const metrics = [
-  { label: 'Open requests', value: '02', detail: '1 needs your reply', icon: 'clipboard', tone: 'blue' },
-  { label: 'Devices covered', value: '03', detail: 'All health checks current', icon: 'laptop', tone: 'green' },
-  { label: 'Next appointment', value: '04 Sep', detail: '09:30 · Remote session', icon: 'clock', tone: 'gold' }
+  {
+    label: 'Open requests',
+    value: String(ticketsCount).padStart(2, '0'),
+    detail: ticketsCount === 0 ? 'Ready when you are' : `${ticketsCount} active service ${ticketsCount === 1 ? 'ticket' : 'tickets'}`,
+    icon: 'clipboard',
+    tone: 'blue'
+  },
+  {
+    label: 'Devices covered',
+    value: preview ? '03' : '—',
+    detail: preview ? 'All health checks current' : 'No device inventory linked',
+    icon: 'laptop',
+    tone: 'green'
+  },
+  {
+    label: 'Next appointment',
+    value: preview ? '04 Sep' : '—',
+    detail: preview ? '09:30 · Remote session' : 'No appointment scheduled',
+    icon: 'clock',
+    tone: 'gold'
+  }
 ];
 
-const activity = [
-  { date: 'Today, 08:42', title: 'Technician added a note to your laptop request', detail: 'We found one more performance check to run.', icon: 'message', color: 'blue' },
-  { date: '28 Aug, 16:10', title: 'Health check report is ready', detail: 'Your device summary is available to review.', icon: 'check', color: 'green' },
-  { date: '26 Aug, 11:05', title: 'Request received', detail: 'We will keep you updated at each step.', icon: 'clipboard', color: 'gold' }
-];
+const activity = preview
+  ? [
+      { date: 'Today, 08:42', title: 'Technician added a note to your laptop request', detail: 'We found one more performance check to run.', icon: 'message', color: 'blue' },
+      { date: '28 Aug, 16:10', title: 'Health check report is ready', detail: 'Your device summary is available to review.', icon: 'check', color: 'green' },
+      { date: '26 Aug, 11:05', title: 'Request received', detail: 'We will keep you updated at each step.', icon: 'clipboard', color: 'gold' }
+    ]
+  : ticket
+    ? [{ date: ticket.updatedAt || 'Recently', title: `${ticket.serviceName} is active`, detail: `Current status: ${statusLabel}.`, icon: 'clipboard', color: 'blue' }]
+    : [];
 
 const services = [
   { label: 'Device Care', detail: 'Diagnosis, setup & repair', icon: 'laptop' },
@@ -54,65 +87,112 @@ const services = [
       </a>
     </section>
 
-    <section class="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.9fr)]" aria-label="Current request and next step">
-      <article class="relative isolate overflow-hidden rounded-2xl bg-[#0a2850] p-6 text-white shadow-[0_18px_40px_rgba(10,40,80,0.12)] sm:p-8">
-        <div class="pointer-events-none absolute -right-16 -top-28 -z-10 h-72 w-72 rounded-full bg-[#1b6da9]/35 blur-3xl"></div>
-        <div class="pointer-events-none absolute bottom-[-7rem] right-24 -z-10 h-56 w-56 rounded-full bg-[#f3bf58]/15 blur-3xl"></div>
-        <div class="flex flex-col justify-between gap-8 md:flex-row md:items-start">
-          <div class="max-w-xl">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="rounded-full bg-[#f3bf58] px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[#102845]">Active request</span>
-              <span class="text-xs font-medium text-[#a9c3df]">EL-2408</span>
+    {ticket ? (
+      <section class="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.9fr)]" aria-label="Current request and next step">
+        <article class="relative isolate overflow-hidden rounded-2xl bg-[#0a2850] p-6 text-white shadow-[0_18px_40px_rgba(10,40,80,0.12)] sm:p-8">
+          <div class="pointer-events-none absolute -right-16 -top-28 -z-10 h-72 w-72 rounded-full bg-[#1b6da9]/35 blur-3xl"></div>
+          <div class="pointer-events-none absolute bottom-[-7rem] right-24 -z-10 h-56 w-56 rounded-full bg-[#f3bf58]/15 blur-3xl"></div>
+          <div class="flex flex-col justify-between gap-8 md:flex-row md:items-start">
+            <div class="max-w-xl">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="rounded-full bg-[#f3bf58] px-2.5 py-1 text-[0.65rem] font-bold tracking-[0.08em] text-[#102845]">{ticket.ticketId}</span>
+                <span class="text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[#a9c3df]">Active request</span>
+              </div>
+              <h2 class="mt-5 max-w-md text-2xl font-semibold tracking-[-0.03em] sm:text-[1.75rem]">{ticket.serviceName}</h2>
+              <p class="mt-3 max-w-lg text-sm leading-6 text-[#b9cee3]">{ticket.description || 'We are reviewing your request and will keep you informed at each clear next step.'}</p>
             </div>
-            <h2 class="mt-5 max-w-md text-2xl font-semibold tracking-[-0.03em] sm:text-[1.75rem]">Laptop performance &amp; health check</h2>
-            <p class="mt-3 max-w-lg text-sm leading-6 text-[#b9cee3]">A practical review of your Lenovo ThinkPad so you can work without the slowdowns.</p>
+            <span class="flex w-fit items-center gap-2 rounded-full border border-[#70d5f2]/30 bg-[#12416f] px-3 py-2 text-xs font-semibold text-[#b7efff]">
+              <span class="h-2 w-2 rounded-full bg-[#6fe0ff] shadow-[0_0_0_3px_rgba(111,224,255,0.12)]"></span>
+              {statusLabel}
+            </span>
           </div>
-          <span class="flex w-fit items-center gap-2 rounded-full border border-[#70d5f2]/30 bg-[#12416f] px-3 py-2 text-xs font-semibold text-[#b7efff]">
-            <span class="h-2 w-2 rounded-full bg-[#6fe0ff] shadow-[0_0_0_3px_rgba(111,224,255,0.12)]"></span>
-            In progress
-          </span>
-        </div>
 
-        <div class="mt-9 border-t border-white/15 pt-5">
-          <div class="mb-3 flex items-center justify-between text-xs">
-            <span class="font-semibold text-[#d9e8f5]">Request progress</span>
-            <span class="font-bold text-[#78d9ff]">2 of 3 steps</span>
+          <div class="mt-9 border-t border-white/15 pt-5">
+            <div class="mb-3 flex items-center justify-between text-xs">
+              <span class="font-semibold text-[#d9e8f5]">Request progress</span>
+              <span class="font-bold text-[#78d9ff]">{statusStep} of 3 steps</span>
+            </div>
+            <div class="h-2 overflow-hidden rounded-full bg-white/15" role="progressbar" aria-label="Request progress" aria-valuemin="1" aria-valuemax="3" aria-valuenow={statusStep}>
+              <div class="h-full rounded-full bg-[#73d7ff] transition-[width] duration-500" style={`width: ${progressPercent}`}></div>
+            </div>
+            <div class="mt-5 grid grid-cols-3 gap-3 text-xs">
+              {statusSteps.map((item) => {
+                const complete = statusStep > item.step;
+                const current = statusStep === item.step;
+                return (
+                  <div class:list={[
+                    'flex items-center gap-2',
+                    complete || current ? 'font-semibold text-white' : 'text-[#7897b8]'
+                  ]}>
+                    <span class:list={[
+                      'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[0.65rem]',
+                      complete ? 'bg-[#73d7ff] text-[#0a2850]' : current ? 'border border-[#73d7ff] text-[#73d7ff]' : 'border border-white/25'
+                    ]}>
+                      {complete ? <Icon name="check" size={13} /> : item.step}
+                    </span>
+                    {item.label}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <div class="h-2 overflow-hidden rounded-full bg-white/15">
-            <div class="h-full w-2/3 rounded-full bg-[#73d7ff]"></div>
-          </div>
-          <div class="mt-5 grid grid-cols-3 gap-3 text-xs">
-            <div class="flex items-center gap-2 text-[#b9cee3]"><span class="flex h-5 w-5 items-center justify-center rounded-full bg-[#73d7ff] text-[#0a2850]"><Icon name="check" size={13} /></span> Received</div>
-            <div class="flex items-center gap-2 font-semibold text-white"><span class="flex h-5 w-5 items-center justify-center rounded-full border border-[#73d7ff] text-[0.65rem] text-[#73d7ff]">2</span> Assessment</div>
-            <div class="flex items-center gap-2 text-[#7897b8]"><span class="flex h-5 w-5 items-center justify-center rounded-full border border-white/25 text-[0.65rem]">3</span> Resolution</div>
-          </div>
-        </div>
 
-        <a href="/requests/el-2408" class="mt-7 inline-flex items-center gap-2 text-sm font-bold text-[#83ddff] transition hover:text-white">
-          View request details
-          <Icon name="arrow" size={17} />
-        </a>
-      </article>
-
-      <article class="flex flex-col justify-between rounded-2xl border border-[#d9e5ee] bg-white p-6 shadow-[0_12px_30px_rgba(16,40,69,0.04)] sm:p-7">
-        <div>
-          <div class="flex items-center justify-between">
-            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff5dc] text-[#b47a11]"><Icon name="message" size={20} /></span>
-            <span class="rounded-full bg-[#fff5dc] px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[#94640c]">Your action</span>
-          </div>
-          <p class="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-[#54708e]">Next step</p>
-          <h2 class="mt-2 text-xl font-semibold tracking-[-0.025em] text-[#102845]">Confirm a convenient time</h2>
-          <p class="mt-3 text-sm leading-6 text-[#607a95]">We are ready for the final check. Reply with a preferred time for the remote session.</p>
-        </div>
-        <div class="mt-7">
-          <a href="/messages" class="inline-flex items-center gap-2 text-sm font-bold text-[#1267a8] transition hover:text-[#0a416b]">
-            Reply to technician
+          <a href={`/requests/${ticket.ticketId}`} class="mt-7 inline-flex items-center gap-2 text-sm font-bold text-[#83ddff] transition hover:text-white">
+            View request details
             <Icon name="arrow" size={17} />
           </a>
-          <p class="mt-4 flex items-center gap-2 text-xs text-[#748aa0]"><Icon name="clock" size={14} /> Usually replies within one business day</p>
-        </div>
-      </article>
-    </section>
+        </article>
+
+        <article class="flex flex-col justify-between rounded-2xl border border-[#d9e5ee] bg-white p-6 shadow-[0_12px_30px_rgba(16,40,69,0.04)] sm:p-7">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff5dc] text-[#b47a11]"><Icon name="message" size={20} /></span>
+              <span class="rounded-full bg-[#fff5dc] px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[#94640c]">Your action</span>
+            </div>
+            <p class="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-[#54708e]">Next step</p>
+            <h2 class="mt-2 text-xl font-semibold tracking-[-0.025em] text-[#102845]">{statusStep === 3 ? 'Review the resolution' : 'Confirm a convenient time'}</h2>
+            <p class="mt-3 text-sm leading-6 text-[#607a95]">{statusStep === 3 ? 'Your service update is ready. Open the request to review what happens next.' : 'We are ready for the next check. Reply with a preferred time for the remote session.'}</p>
+          </div>
+          <div class="mt-7">
+            <a href="/messages" class="inline-flex items-center gap-2 text-sm font-bold text-[#1267a8] transition hover:text-[#0a416b]">
+              Reply to technician
+              <Icon name="arrow" size={17} />
+            </a>
+            <p class="mt-4 flex items-center gap-2 text-xs text-[#748aa0]"><Icon name="clock" size={14} /> Usually replies within one business day</p>
+          </div>
+        </article>
+      </section>
+    ) : (
+      <section class="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.9fr)]" aria-label="Welcome to your portal">
+        <article class="relative isolate overflow-hidden rounded-2xl bg-[#0a2850] p-6 text-white shadow-[0_18px_40px_rgba(10,40,80,0.12)] sm:p-8">
+          <div class="pointer-events-none absolute -right-16 -top-28 -z-10 h-72 w-72 rounded-full bg-[#1b6da9]/35 blur-3xl"></div>
+          <div class="pointer-events-none absolute bottom-[-7rem] right-24 -z-10 h-56 w-56 rounded-full bg-[#f3bf58]/15 blur-3xl"></div>
+          <div class="max-w-xl">
+            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#12416f] text-[#73d7ff]"><Icon name="shield" size={22} /></span>
+            <p class="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-[#83ddff]">Welcome to your workspace</p>
+            <h2 class="mt-3 max-w-lg text-2xl font-semibold tracking-[-0.03em] sm:text-[1.75rem]">You have no active service tickets.</h2>
+            <p class="mt-3 max-w-lg text-sm leading-6 text-[#b9cee3]">When something is not working or you are ready to build, we will help you identify the most practical next step.</p>
+            <a href="/requests/new" class="mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-[#f3bf58] px-4 py-3 text-sm font-bold text-[#102845] shadow-[0_8px_20px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5 hover:bg-[#ffd477] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f3bf58] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a2850]">
+              <Icon name="plus" size={18} />
+              Request a New Service
+            </a>
+          </div>
+        </article>
+
+        <article class="flex flex-col justify-between rounded-2xl border border-[#d9e5ee] bg-white p-6 shadow-[0_12px_30px_rgba(16,40,69,0.04)] sm:p-7">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e9f7f0] text-[#21875c]"><Icon name="check" size={20} /></span>
+              <span class="rounded-full bg-[#e9f7f0] px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[#287650]">Ready when you are</span>
+            </div>
+            <p class="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-[#54708e]">A clear process</p>
+            <h2 class="mt-2 text-xl font-semibold tracking-[-0.025em] text-[#102845]">Tell us what you need.</h2>
+            <p class="mt-3 text-sm leading-6 text-[#607a95]">Share a few details and we will come back with an honest assessment and clear next steps.</p>
+          </div>
+          <a href="/requests/new" class="mt-7 inline-flex items-center gap-2 text-sm font-bold text-[#1267a8] transition hover:text-[#0a416b]">Start a request <Icon name="arrow" size={17} /></a>
+        </article>
+      </section>
+    )}
 
     <section class="grid gap-4 md:grid-cols-3" aria-label="Portal summary">
       {metrics.map((metric) => (
@@ -146,7 +226,7 @@ const services = [
           <a href="/activity" class="text-xs font-bold text-[#1267a8] transition hover:text-[#0a416b]">See all</a>
         </div>
         <div class="divide-y divide-[#e8eef3] px-5 sm:px-7">
-          {activity.map((item) => (
+          {activity.length > 0 ? activity.map((item) => (
             <div class="flex gap-4 py-5">
               <span class:list={[
                 'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
@@ -164,7 +244,9 @@ const services = [
                 <p class="mt-1 text-xs leading-5 text-[#6b829a]">{item.detail}</p>
               </div>
             </div>
-          ))}
+          )) : (
+            <p class="py-7 text-sm leading-6 text-[#6b829a]">No recent ticket activity. Request a service whenever you are ready.</p>
+          )}
         </div>
       </article>
 

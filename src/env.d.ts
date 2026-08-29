@@ -15,6 +15,10 @@ declare global {
       GOOGLE_CLIENT_ID?: string;
       GOOGLE_CLIENT_SECRET?: string;
       AUTH_ORIGIN?: string;
+      GOOGLE_SHEET_ID?: string;
+      GOOGLE_SHEET_TAB?: string;
+      GOOGLE_SERVICE_ACCOUNT_EMAIL?: string;
+      GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?: string;
     }
   }
 }

@@ -1,6 +1,7 @@
 ---
 import DashboardView from '../components/DashboardView.astro';
 import type { PortalUser } from '../lib/auth';
+import type { ServiceTicket } from '../lib/google-sheets';
 
 export const prerender = false;
 
@@ -9,6 +10,15 @@ const previewUser: PortalUser = {
   name: 'Kwame Mensah',
   email: 'kwame@example.com'
 };
+
+const previewTicket: ServiceTicket = {
+  ticketId: 'EL-2048',
+  serviceName: 'Laptop performance check',
+  description: 'We are checking your laptop performance and will share a clear recommendation after the assessment.',
+  statusStep: 2,
+  status: 'In progress',
+  updatedAt: '2026-08-29T08:42:00.000Z'
+};
 ---
 
-<DashboardView user={previewUser} preview />
+<DashboardView user={previewUser} ticket={previewTicket} ticketsCount={2} preview />

@@ -1,6 +1,7 @@
 ---
 import DashboardView from '../components/DashboardView.astro';
 import { USER_SESSION_KEY, type PortalUser } from '../lib/auth';
+import { getTicketsForUser } from '../lib/google-sheets';
 
 export const prerender = false;
 
@@ -9,6 +10,8 @@ const user = await Astro.session?.get<PortalUser>(USER_SESSION_KEY);
 if (!user) {
   return Astro.redirect('/login?next=%2Fdashboard');
 }
+
+const { tickets } = await getTicketsForUser(user.email);
 ---
 
-<DashboardView user={user} />
+<DashboardView user={user} ticket={tickets[0] ?? null} ticketsCount={tickets.length} />
