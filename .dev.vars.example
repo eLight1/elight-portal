@@ -1,0 +1,7 @@
+# Google OAuth credentials for local Cloudflare development.
+# Create a Web application OAuth client in Google Cloud Console.
+GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-client-secret"
+
+# Optional in local development. Set this to your deployed Worker origin in production.
+AUTH_ORIGIN="http://localhost:4321"

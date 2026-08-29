@@ -1,43 +1,82 @@
-# Astro Starter Kit: Minimal
+# E Light Services client portal
 
-```sh
-npm create astro@latest -- --template minimal
-```
+A server-rendered Astro portal for E Light Services, styled with Tailwind CSS and deployed to Cloudflare Workers.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Commands
 
-## 🚀 Project Structure
+| Command | Action |
+| --- | --- |
+| `npm run dev` | Start the local Astro development server |
+| `npm run build` | Build the Cloudflare Worker and static assets |
+| `npm run preview` | Preview the built Worker locally |
+| `npm run generate-types` | Regenerate Wrangler environment types |
 
-Inside of your Astro project, you'll see the following folders and files:
+## Google sign-in setup
+
+The portal uses a small, server-side Google OAuth flow with PKCE. Google access tokens are used only to verify the profile and are not stored. The authenticated user profile is stored in an Astro server session backed by Cloudflare Workers KV.
+
+### 1. Create a Google OAuth client
+
+In Google Cloud Console, create an OAuth client with application type **Web application**. Add these authorized redirect URIs:
 
 ```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+http://localhost:4321/api/auth/google/callback
+https://<your-worker-domain>/api/auth/google/callback
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+Use the exact deployed origin in `AUTH_ORIGIN` when the Worker is behind a custom domain or proxy.
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+### 2. Configure local development
 
-Any static assets, like images, can be placed in the `public/` directory.
+Copy the example file and add the credentials from Google Cloud Console:
 
-## 🧞 Commands
+```sh
+cp .dev.vars.example .dev.vars
+```
 
-All commands are run from the root of the project, from a terminal:
+`.dev.vars` is ignored by Git. It should contain:
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+```text
+GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-client-secret"
+AUTH_ORIGIN="http://localhost:4321"
+```
 
-## 👀 Want to learn more?
+Then run:
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+```sh
+npm run dev
+```
+
+Open [http://localhost:4321/login](http://localhost:4321/login) and choose **Sign in with Google**.
+
+### 3. Configure production secrets
+
+Set the values as Worker secrets rather than committing them to `wrangler.jsonc`:
+
+```sh
+npx wrangler secret put GOOGLE_CLIENT_ID
+npx wrangler secret put GOOGLE_CLIENT_SECRET
+npx wrangler secret put AUTH_ORIGIN
+```
+
+`AUTH_ORIGIN` should be the public origin, for example `https://portal.example.com`. If it is omitted, the callback URL is derived from the incoming request origin.
+
+Deploy with:
+
+```sh
+npm run build
+npx wrangler deploy
+```
+
+The Cloudflare adapter provisions the default `SESSION` Workers KV binding for Astro sessions. If your Cloudflare project requires an explicit binding, add the namespace ID to `wrangler.jsonc` using the `SESSION` binding name.
+
+## Authentication routes
+
+- `/login` — public Google sign-in page
+- `/api/auth/google` — creates a state and PKCE challenge, then redirects to Google
+- `/api/auth/google/callback` — validates state, exchanges the code, verifies the Google profile, and creates the server session
+- `/api/auth/logout` — destroys the current session
+- `/dashboard` — protected route; unauthenticated requests redirect to `/login`
+
+The route guard is implemented in `src/middleware.ts`, with a second session check in `src/pages/dashboard.astro` as defense in depth.

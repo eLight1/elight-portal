@@ -1,20 +1,31 @@
 ---
 import Icon from '../components/Icon.astro';
+import type { PortalUser } from '../lib/auth';
 import '../styles/global.css';
 
 interface Props {
   title?: string;
   activeNav?: string;
+  user?: PortalUser | null;
 }
 
-const { title = 'Client portal | E Light Services', activeNav = 'Overview' } = Astro.props;
+const { title = 'Client portal | E Light Services', activeNav = 'Overview', user = null } = Astro.props;
 const active = activeNav.toLowerCase();
+const displayName = user?.name || 'Client';
+const displayEmail = user?.email || 'Secure workspace';
+const initials = displayName
+  .split(/\s+/)
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((part) => part[0])
+  .join('')
+  .toUpperCase() || 'EL';
 
 const navGroups = [
   {
     label: 'Workspace',
     items: [
-      { label: 'Overview', href: '/', icon: 'grid' },
+      { label: 'Overview', href: '/dashboard', icon: 'grid' },
       { label: 'Requests', href: '/requests', icon: 'clipboard', badge: '2' },
       { label: 'Devices', href: '/devices', icon: 'laptop' },
       { label: 'Messages', href: '/messages', icon: 'message', badge: '1' }
@@ -117,12 +128,20 @@ const mobileItems = navGroups.flatMap((group) => group.items).concat({
         </div>
 
         <div class="mt-5 flex items-center gap-3 border-t border-white/10 px-2 pt-5">
-          <div class="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3bf58] text-xs font-bold text-[#071b39]">KM</div>
+          {user?.image ? (
+            <img src={user.image} alt="" referrerpolicy="no-referrer" class="h-9 w-9 rounded-full object-cover" />
+          ) : (
+            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3bf58] text-xs font-bold text-[#071b39]">{initials}</div>
+          )}
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-semibold text-white">Kwame Mensah</p>
-            <p class="truncate text-xs text-[#89a7c7]">kwame@mensah.co</p>
+            <p class="truncate text-sm font-semibold text-white">{displayName}</p>
+            <p class="truncate text-xs text-[#89a7c7]">{displayEmail}</p>
           </div>
-          <Icon name="more" size={18} class="text-[#89a7c7]" />
+          <form action="/api/auth/logout" method="POST">
+            <button type="submit" class="rounded-lg p-1.5 text-[#89a7c7] transition hover:bg-white/10 hover:text-white" aria-label="Sign out">
+              <Icon name="logout" size={17} />
+            </button>
+          </form>
         </div>
       </div>
     </aside>
@@ -151,7 +170,11 @@ const mobileItems = navGroups.flatMap((group) => group.items).concat({
               <Icon name="bell" size={19} />
               <span class="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#f3bf58]"></span>
             </button>
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-[#123e72] text-xs font-bold text-white ring-4 ring-[#e8f0f6]" aria-label="Signed in as Kwame Mensah">KM</div>
+            {user?.image ? (
+              <img src={user.image} alt="" referrerpolicy="no-referrer" class="h-9 w-9 rounded-full object-cover ring-4 ring-[#e8f0f6]" />
+            ) : (
+              <div class="flex h-9 w-9 items-center justify-center rounded-full bg-[#123e72] text-xs font-bold text-white ring-4 ring-[#e8f0f6]" aria-label={`Signed in as ${displayName}`}>{initials}</div>
+            )}
           </div>
         </div>
       </header>
