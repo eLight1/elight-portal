@@ -15,7 +15,7 @@ const { title = 'Sign in | E Light Services' } = Astro.props;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content="Secure client access for E Light Services." />
-    <link rel="icon" type="image/webp" href="https://elightservices.com/assets/e-light-shield-192.webp" />
+    <link rel="icon" type="image/png" href="/brand/e-light-services-shield.png" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
   </head>
@@ -24,14 +24,8 @@ const { title = 'Sign in | E Light Services' } = Astro.props;
       <aside class="relative hidden overflow-hidden bg-[#071b39] px-10 py-10 text-white lg:flex lg:flex-col xl:px-16">
         <div class="pointer-events-none absolute -right-40 top-16 h-96 w-96 rounded-full bg-[#1267a8]/30 blur-3xl"></div>
         <div class="pointer-events-none absolute -bottom-40 -left-24 h-96 w-96 rounded-full bg-[#f3bf58]/10 blur-3xl"></div>
-        <a href="/" class="relative flex w-fit items-center gap-3 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#73d7ff]">
-          <span class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-[#10376b] shadow-[0_0_0_1px_rgba(115,215,255,0.25)]">
-            <img src="https://elightservices.com/assets/e-light-shield-192.webp" onerror="this.onerror=null;this.src='/e-light-services-shield.svg'" alt="" class="h-11 w-11" />
-          </span>
-          <span class="leading-none">
-            <span class="block text-[0.72rem] font-bold tracking-[0.22em] text-white">E LIGHT</span>
-            <span class="mt-1 block text-[0.64rem] font-medium tracking-[0.2em] text-[#82d9ff]">SERVICES</span>
-          </span>
+        <a href="/" class="relative flex w-fit items-center rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#73d7ff]">
+          <img src="/brand/e-light-services-lockup-dark.png" alt="E Light Services" class="h-14 w-auto max-w-[300px] object-contain object-left transition hover:opacity-90" />
         </a>
 
         <div class="relative mt-auto max-w-lg pb-8">
@@ -50,7 +44,7 @@ const { title = 'Sign in | E Light Services' } = Astro.props;
         <div class="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center">
           <a href="/" class="mx-auto flex items-center gap-3 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1267a8] lg:mx-0">
             <span class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-[#0d3568] shadow-[0_8px_20px_rgba(7,27,57,0.12)] lg:hidden">
-              <img src="https://elightservices.com/assets/e-light-shield-192.webp" onerror="this.onerror=null;this.src='/e-light-services-shield.svg'" alt="" class="h-10 w-10" />
+              <img src="/brand/e-light-services-shield.png" alt="" class="h-10 w-10" />
             </span>
             <span class="leading-none lg:hidden">
               <span class="block text-[0.7rem] font-bold tracking-[0.22em] text-[#102845]">E LIGHT</span>

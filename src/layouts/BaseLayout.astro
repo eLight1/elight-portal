@@ -50,7 +50,7 @@ const mobileItems = navGroups.flatMap((group) => group.items).concat({
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content="A clear, secure client workspace from E Light Services." />
-    <link rel="icon" type="image/webp" href="https://elightservices.com/assets/e-light-shield-192.webp" />
+    <link rel="icon" type="image/png" href="/brand/e-light-services-shield.png" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
   </head>
@@ -67,14 +67,8 @@ const mobileItems = navGroups.flatMap((group) => group.items).concat({
       aria-label="Portal navigation"
     >
       <div class="flex h-full flex-col px-5 py-6">
-        <a href="/" class="group flex items-center gap-3 rounded-xl px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#73d7ff]">
-          <span class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-[#10376b] shadow-[0_0_0_1px_rgba(115,215,255,0.2)] transition group-hover:shadow-[0_0_0_3px_rgba(115,215,255,0.15)]">
-            <img src="https://elightservices.com/assets/e-light-shield-192.webp" onerror="this.onerror=null;this.src='/e-light-services-shield.svg'" alt="" class="h-10 w-10" />
-          </span>
-          <span class="leading-none">
-            <span class="block text-[0.7rem] font-bold tracking-[0.22em] text-white">E LIGHT</span>
-            <span class="mt-1 block text-[0.62rem] font-medium tracking-[0.2em] text-[#82d9ff]">SERVICES</span>
-          </span>
+        <a href="/" class="group flex w-fit items-center rounded-xl px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#73d7ff]">
+          <img src="/brand/e-light-services-lockup-dark.png" alt="E Light Services" class="h-12 w-auto max-w-[232px] object-contain object-left transition group-hover:opacity-90" />
         </a>
 
         <div class="mt-10 px-3">
@@ -149,12 +143,15 @@ const mobileItems = navGroups.flatMap((group) => group.items).concat({
     <div class="min-h-screen lg:pl-72">
       <header class="sticky top-0 z-20 border-b border-[#dce5ee] bg-[#f8fafc]/95 backdrop-blur" aria-label="Portal header">
         <div class="mx-auto flex h-[4.5rem] max-w-[1500px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
-          <div class="min-w-0">
-            <p class="text-[0.62rem] font-bold uppercase tracking-[0.2em] text-[#54708e]">E Light Services</p>
-            <div class="mt-1 flex items-center gap-2 text-sm text-[#59718c]">
-              <span>Client portal</span>
-              <span class="text-[#b2c0ce]">/</span>
-              <span class="font-semibold text-[#142b47]">{activeNav}</span>
+          <div class="flex min-w-0 items-center gap-3">
+            <img src="/brand/e-light-services-shield.png" alt="" class="h-9 w-9 rounded-lg object-cover lg:hidden" />
+            <div class="min-w-0">
+              <p class="text-[0.62rem] font-bold uppercase tracking-[0.2em] text-[#54708e]">E Light Services</p>
+              <div class="mt-1 flex items-center gap-2 text-sm text-[#59718c]">
+                <span>Client portal</span>
+                <span class="text-[#b2c0ce]">/</span>
+                <span class="font-semibold text-[#142b47]">{activeNav}</span>
+              </div>
             </div>
           </div>
           <div class="flex items-center gap-2 sm:gap-4">
