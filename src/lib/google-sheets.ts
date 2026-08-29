@@ -1,4 +1,4 @@
-import { google } from 'googleapis';
+import { auth as googleAuth, sheets as googleSheets } from 'googleapis/build/src/apis/sheets';
 import { env } from 'cloudflare:workers';
 
 export interface ServiceTicket {
@@ -40,8 +40,8 @@ function normalizePrivateKey(privateKey: string): string {
   return privateKey.replace(/\\n/g, '\n').replace(/\r\n/g, '\n').trim();
 }
 
-function createJwtClient(email: string, privateKey: string): InstanceType<typeof google.auth.JWT> {
-  return new google.auth.JWT({
+function createJwtClient(email: string, privateKey: string): InstanceType<typeof googleAuth.JWT> {
+  return new googleAuth.JWT({
     email,
     key: normalizePrivateKey(privateKey),
     scopes: [SHEETS_SCOPE]
@@ -50,7 +50,7 @@ function createJwtClient(email: string, privateKey: string): InstanceType<typeof
 
 async function fetchTicketRows(sheetId: string, tabName: string, email: string, privateKey: string): Promise<unknown[][]> {
   const auth = createJwtClient(email, privateKey);
-  const sheets = google.sheets({ version: 'v4', auth });
+  const sheets = googleSheets({ version: 'v4', auth });
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
     range: tabName,
