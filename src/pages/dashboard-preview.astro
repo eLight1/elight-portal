@@ -1,0 +1,14 @@
+---
+import DashboardView from '../components/DashboardView.astro';
+import type { PortalUser } from '../lib/auth';
+
+export const prerender = false;
+
+const previewUser: PortalUser = {
+  id: 'preview-user',
+  name: 'Kwame Mensah',
+  email: 'kwame@example.com'
+};
+---
+
+<DashboardView user={previewUser} preview />

@@ -78,5 +78,6 @@ The Cloudflare adapter provisions the default `SESSION` Workers KV binding for A
 - `/api/auth/google/callback` — validates state, exchanges the code, verifies the Google profile, and creates the server session
 - `/api/auth/logout` — destroys the current session
 - `/dashboard` — protected route; unauthenticated requests redirect to `/login`
+- `/dashboard-preview` — public sample dashboard using fixture data; no live client data is exposed
 
 The route guard is implemented in `src/middleware.ts`, with a second session check in `src/pages/dashboard.astro` as defense in depth.
