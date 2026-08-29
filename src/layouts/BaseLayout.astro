@@ -1,0 +1,214 @@
+---
+import Icon from '../components/Icon.astro';
+import type { PortalUser } from '../lib/auth';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  activeNav?: string;
+  user?: PortalUser | null;
+}
+
+const { title = 'Client portal | E Light Services', activeNav = 'Overview', user = null } = Astro.props;
+const active = activeNav.toLowerCase();
+const displayName = user?.name || 'Client';
+const displayEmail = user?.email || 'Secure workspace';
+const initials = displayName
+  .split(/\s+/)
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((part) => part[0])
+  .join('')
+  .toUpperCase() || 'EL';
+
+const navGroups = [
+  {
+    label: 'Workspace',
+    items: [
+      { label: 'Overview', href: '/dashboard', icon: 'grid' },
+      { label: 'Requests', href: '/requests', icon: 'clipboard', badge: '2' },
+      { label: 'Devices', href: '/devices', icon: 'laptop' },
+      { label: 'Messages', href: '/messages', icon: 'message', badge: '1' }
+    ]
+  },
+  {
+    label: 'Support',
+    items: [{ label: 'Help centre', href: '/help', icon: 'help' }]
+  }
+];
+
+const mobileItems = navGroups.flatMap((group) => group.items).concat({
+  label: 'Settings',
+  href: '/settings',
+  icon: 'settings'
+});
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="A clear, secure client workspace from E Light Services." />
+    <link rel="icon" type="image/png" href="/brand/e-light-services-shield.png" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <a
+      class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-[#071b39] focus:shadow-lg"
+      href="#main-content"
+    >
+      Skip to main content
+    </a>
+
+    <aside
+      class="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-white/10 bg-[#071b39] text-white lg:flex"
+      aria-label="Portal navigation"
+    >
+      <div class="flex h-full flex-col px-5 py-6">
+        <a href="/" class="group flex w-fit items-center rounded-xl px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#73d7ff]">
+          <img src="/brand/e-light-services-lockup-dark.png" alt="E Light Services" class="h-12 w-auto max-w-[232px] object-contain object-left transition group-hover:opacity-90" />
+        </a>
+
+        <div class="mt-10 px-3">
+          <p class="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#86a4c7]">Client workspace</p>
+          <p class="mt-2 text-sm leading-5 text-[#d6e4f4]">A clear place to keep your work moving.</p>
+        </div>
+
+        <nav class="mt-8 flex-1" aria-label="Primary">
+          {navGroups.map((group) => (
+            <div class="mb-7 last:mb-0">
+              <p class="mb-2 px-3 text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#6f8dab]">{group.label}</p>
+              <div class="space-y-1">
+                {group.items.map((item) => {
+                  const isActive = active === item.label.toLowerCase();
+                  return (
+                    <a
+                      href={item.href}
+                      class:list={[
+                        'group relative flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition',
+                        isActive
+                          ? 'bg-white text-[#071b39] shadow-[0_10px_24px_rgba(0,0,0,0.12)]'
+                          : 'text-[#afc4dc] hover:bg-white/10 hover:text-white'
+                      ]}
+                      aria-current={isActive ? 'page' : undefined}
+                    >
+                      <Icon name={item.icon} size={18} class={isActive ? 'text-[#1465a8]' : 'text-[#77d5ff]'} />
+                      <span>{item.label}</span>
+                      {item.badge && (
+                        <span class:list={['ml-auto rounded-full px-2 py-0.5 text-[0.65rem] font-bold', isActive ? 'bg-[#e8f4fb] text-[#1465a8]' : 'bg-[#123b6d] text-[#a7ddf7]']}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        <div class="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+          <div class="flex items-start gap-3">
+            <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#123e72] text-[#7bd8ff]">
+              <Icon name="shield" size={17} />
+            </span>
+            <div>
+              <p class="text-xs font-semibold text-white">Integrity & Clarity</p>
+              <p class="mt-1 text-[0.7rem] leading-5 text-[#9eb6d0]">Private by design. Clear next steps, without the jargon.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 flex items-center gap-3 border-t border-white/10 px-2 pt-5">
+          {user?.image ? (
+            <img src={user.image} alt="" referrerpolicy="no-referrer" class="h-9 w-9 rounded-full object-cover" />
+          ) : (
+            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3bf58] text-xs font-bold text-[#071b39]">{initials}</div>
+          )}
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-semibold text-white">{displayName}</p>
+            <p class="truncate text-xs text-[#89a7c7]">{displayEmail}</p>
+          </div>
+          <form action="/api/auth/logout" method="POST">
+            <button type="submit" class="rounded-lg p-1.5 text-[#89a7c7] transition hover:bg-white/10 hover:text-white" aria-label="Sign out">
+              <Icon name="logout" size={17} />
+            </button>
+          </form>
+        </div>
+      </div>
+    </aside>
+
+    <div class="min-h-screen lg:pl-72">
+      <header class="sticky top-0 z-20 border-b border-[#dce5ee] bg-[#f8fafc]/95 backdrop-blur" aria-label="Portal header">
+        <div class="mx-auto flex h-[4.5rem] max-w-[1500px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
+          <div class="flex min-w-0 items-center gap-3">
+            <img src="/brand/e-light-services-shield.png" alt="" class="h-9 w-9 rounded-lg object-cover lg:hidden" />
+            <div class="min-w-0">
+              <p class="text-[0.62rem] font-bold uppercase tracking-[0.2em] text-[#54708e]">E Light Services</p>
+              <div class="mt-1 flex items-center gap-2 text-sm text-[#59718c]">
+                <span>Client portal</span>
+                <span class="text-[#b2c0ce]">/</span>
+                <span class="font-semibold text-[#142b47]">{activeNav}</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 sm:gap-4">
+            <div class="hidden items-center gap-2 rounded-full border border-[#d7e5ed] bg-white px-3 py-2 text-xs font-semibold text-[#3e617f] sm:flex">
+              <span class="h-2 w-2 rounded-full bg-[#27a06b] shadow-[0_0_0_3px_rgba(39,160,107,0.12)]"></span>
+              All systems clear
+            </div>
+            <a href="/help" class="hidden items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-[#35536f] transition hover:bg-white hover:text-[#1465a8] sm:flex">
+              <Icon name="help" size={18} />
+              <span>Help</span>
+            </a>
+            <button type="button" class="relative rounded-lg p-2 text-[#54708e] transition hover:bg-white hover:text-[#1465a8]" aria-label="Notifications">
+              <Icon name="bell" size={19} />
+              <span class="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#f3bf58]"></span>
+            </button>
+            {user?.image ? (
+              <img src={user.image} alt="" referrerpolicy="no-referrer" class="h-9 w-9 rounded-full object-cover ring-4 ring-[#e8f0f6]" />
+            ) : (
+              <div class="flex h-9 w-9 items-center justify-center rounded-full bg-[#123e72] text-xs font-bold text-white ring-4 ring-[#e8f0f6]" aria-label={`Signed in as ${displayName}`}>{initials}</div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <nav class="border-b border-[#dce5ee] bg-white px-4 py-3 lg:hidden" aria-label="Mobile navigation">
+        <div class="flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {mobileItems.map((item) => {
+            const isActive = active === item.label.toLowerCase();
+            return (
+              <a
+                href={item.href}
+                class:list={[
+                  'flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition',
+                  isActive ? 'bg-[#071b39] text-white' : 'text-[#54708e] hover:bg-[#eef5f9] hover:text-[#142b47]'
+                ]}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                <Icon name={item.icon} size={15} />
+                {item.label}
+                {item.badge && <span class="rounded-full bg-[#f3bf58] px-1.5 py-0.5 text-[0.6rem] font-bold text-[#071b39]">{item.badge}</span>}
+              </a>
+            );
+          })}
+        </div>
+      </nav>
+
+      <main id="main-content" class="mx-auto max-w-[1500px] px-4 py-7 sm:px-6 sm:py-9 lg:px-10 lg:py-11">
+        <slot />
+      </main>
+
+      <footer class="mx-auto flex max-w-[1500px] flex-col gap-2 border-t border-[#dce5ee] px-4 py-6 text-xs text-[#6b829a] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-10">
+        <p>© {new Date().getFullYear()} E Light Services · Lapaz, Accra</p>
+        <div class="flex items-center gap-4">
+          <a href="/privacy" class="transition hover:text-[#1465a8]">Privacy</a>
+          <a href="/help" class="transition hover:text-[#1465a8]">Need help?</a>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>
