@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Avenir Next", "Segoe UI", sans-serif;
+  --color-portal-navy: #071b39;
+  --color-portal-blue: #1267a8;
+  --color-portal-sky: #73d7ff;
+  --color-portal-gold: #f3bf58;
+}
+
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  background: #f8fafc;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background: #f8fafc;
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: #b9eaff;
+  color: #071b39;
+}
+
+.eyebrow {
+  @apply text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#54708e];
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid #1267a8;
+  outline-offset: 3px;
+}
