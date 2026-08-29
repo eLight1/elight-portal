@@ -73,7 +73,7 @@ The Cloudflare adapter provisions the default `SESSION` Workers KV binding for A
 
 ## Google Sheets service tickets
 
-The protected `/dashboard` route loads active tickets on the server after the session guard has confirmed the signed-in user. The browser never receives Google credentials, service-account keys, or an unfiltered spreadsheet response. Rows are filtered by the authenticated user's email before ticket data is passed to the dashboard component.
+The protected `/dashboard` route loads active tickets on the server after the session guard has confirmed the signed-in user. The browser never receives Google credentials, service-account keys, or an unfiltered spreadsheet response. Rows are filtered by the authenticated user's email before ticket data is passed to the dashboard component. Authentication uses the `googleapis` library's `google.auth.JWT` client with the service-account values read from server-side environment variables.
 
 ### 1. Prepare the spreadsheet
 
@@ -93,22 +93,63 @@ Enable the Google Sheets API in the same Google Cloud project as the service acc
 ```text
 GOOGLE_SHEET_ID="your-spreadsheet-id"
 GOOGLE_SHEET_TAB="Service_Tickets"
-GOOGLE_SERVICE_ACCOUNT_EMAIL="sheets-reader@your-project.iam.gserviceaccount.com"
-GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="your-full-service-account-private-key"
+GCP_SERVICE_ACCOUNT_EMAIL="sheets-reader@your-project.iam.gserviceaccount.com"
+GCP_PRIVATE_KEY="your-full-service-account-private-key"
 ```
 
-The private key is a server-only secret. Keep the complete PEM value in `.dev.vars`; do not place it in `src/`, browser code, `public/`, or `wrangler.jsonc`. The loader accepts the escaped-newline format commonly returned by service-account JSON files.
+The private key is a server-only secret. Keep the complete PEM value in `.dev.vars` locally and in Cloudflare's encrypted Environment Variables in production; do not place it in `src/`, browser code, `public/`, or `wrangler.jsonc`. The server reads `process.env.GCP_PRIVATE_KEY` and accepts the escaped-newline format used by Cloudflare environment variables.
 
 For production, add the same values as Worker secrets:
 
 ```sh
 npx wrangler secret put GOOGLE_SHEET_ID
 npx wrangler secret put GOOGLE_SHEET_TAB
-npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_EMAIL
-npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+npx wrangler secret put GCP_SERVICE_ACCOUNT_EMAIL
+npx wrangler secret put GCP_PRIVATE_KEY
 ```
 
 `GOOGLE_SHEET_TAB` defaults to `Service_Tickets` when omitted. If the account is not configured or the Sheets request fails, the dashboard safely renders the no-active-ticket Welcome state and logs only a generic server-side error.
+
+## Connect GitHub to Cloudflare
+
+This repository is an Astro SSR application: Google OAuth, protected `/dashboard`, sessions, and Google Sheets reads all execute on the server. The current `@astrojs/cloudflare` adapter targets Cloudflare Workers; current Astro releases no longer support deploying this SSR adapter as a Cloudflare Pages project. In Cloudflare's combined **Workers & Pages** dashboard, choose **Workers** / **Workers Builds** for this repository rather than the Pages-only option.
+
+### Recommended GitHub deployment with Workers Builds
+
+1. Push this branch or merge the pull request into the production branch on GitHub.
+2. In the Cloudflare dashboard, open **Workers & Pages → Create application → Import a repository**.
+3. Connect GitHub, authorize access to `eLight1/elight-portal`, and select the production branch.
+4. Use these build settings:
+
+   ```text
+   Root directory: /
+   Build command: npm run build
+   Deploy command: npx wrangler deploy
+   ```
+
+5. Add the following in the Worker's **Settings → Variables and Secrets**. Mark credentials and private keys as encrypted secrets:
+
+   ```text
+   GOOGLE_CLIENT_ID
+   GOOGLE_CLIENT_SECRET
+   AUTH_ORIGIN
+   GOOGLE_SHEET_ID
+   GOOGLE_SHEET_TAB=Service_Tickets
+   GCP_SERVICE_ACCOUNT_EMAIL
+   GCP_PRIVATE_KEY
+   ```
+
+   `GCP_PRIVATE_KEY` is read server-side through `process.env.GCP_PRIVATE_KEY`; never add it to GitHub, `public/`, or client-side code. Keep the `\\n` sequences intact if Cloudflare stores the PEM as a single-line value. The `nodejs_compat` flag is already enabled in `wrangler.jsonc` for `process.env` and `googleapis`.
+
+6. Save and deploy. After Cloudflare gives the Worker its public URL, set `AUTH_ORIGIN` to that exact origin and add this Google OAuth redirect URI in Google Cloud Console:
+
+   ```text
+   https://<your-worker-domain>/api/auth/google/callback
+   ```
+
+7. Share the Google Sheet with `GCP_SERVICE_ACCOUNT_EMAIL` as a Viewer. Confirm the `Service_Tickets` tab contains the required headers documented above.
+
+For this SSR app, the Cloudflare dashboard's direct Pages Git integration is not the supported target. A Pages project is suitable for a separate static site, but it will not preserve this protected dashboard and server-side Google Sheets integration with the current Astro adapter.
 
 ## Authentication routes
 

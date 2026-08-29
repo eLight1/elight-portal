@@ -17,8 +17,8 @@ declare global {
       AUTH_ORIGIN?: string;
       GOOGLE_SHEET_ID?: string;
       GOOGLE_SHEET_TAB?: string;
-      GOOGLE_SERVICE_ACCOUNT_EMAIL?: string;
-      GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?: string;
+      GCP_SERVICE_ACCOUNT_EMAIL?: string;
+      GCP_PRIVATE_KEY?: string;
     }
   }
 }

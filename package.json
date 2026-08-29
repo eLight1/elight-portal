@@ -16,10 +16,14 @@
     "@astrojs/cloudflare": "^14.2.5",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.2.9",
+    "googleapis": "^176.0.0",
     "tailwindcss": "^4.3.3",
     "wrangler": "^4.127.1"
   },
   "allowScripts": {
     "esbuild": true
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0"
   }
 }

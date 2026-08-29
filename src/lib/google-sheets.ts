@@ -1,3 +1,4 @@
+import { google } from 'googleapis';
 import { env } from 'cloudflare:workers';
 
 export interface ServiceTicket {
@@ -12,105 +13,55 @@ export interface ServiceTicket {
 interface SheetsEnv {
   GOOGLE_SHEET_ID?: string;
   GOOGLE_SHEET_TAB?: string;
-  GOOGLE_SERVICE_ACCOUNT_EMAIL?: string;
-  GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?: string;
-}
-
-interface SheetsValuesResponse {
-  values?: string[][];
-}
-
-interface GoogleTokenResponse {
-  access_token?: string;
-  expires_in?: number;
+  GCP_SERVICE_ACCOUNT_EMAIL?: string;
+  GCP_PRIVATE_KEY?: string;
 }
 
 const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets.readonly';
-const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 const DEFAULT_TAB = 'Service_Tickets';
 
-let cachedAccessToken: { value: string; expiresAt: number } | undefined;
-
 function getSheetsEnv(): SheetsEnv {
-  return env as unknown as SheetsEnv;
+  const workerEnv = env as unknown as SheetsEnv;
+  // Cloudflare Pages/Node deployments expose project variables through process.env.
+  // The request-scoped Worker env fallback keeps the same server-only module usable
+  // with the Astro Cloudflare adapter when Node compatibility is not populated.
+  const processEnv = typeof process !== 'undefined' ? process.env : undefined;
+  const privateKey = typeof process !== 'undefined' ? process.env.GCP_PRIVATE_KEY : undefined;
+
+  return {
+    GOOGLE_SHEET_ID: processEnv?.GOOGLE_SHEET_ID ?? workerEnv.GOOGLE_SHEET_ID,
+    GOOGLE_SHEET_TAB: processEnv?.GOOGLE_SHEET_TAB ?? workerEnv.GOOGLE_SHEET_TAB,
+    GCP_SERVICE_ACCOUNT_EMAIL: processEnv?.GCP_SERVICE_ACCOUNT_EMAIL ?? workerEnv.GCP_SERVICE_ACCOUNT_EMAIL,
+    GCP_PRIVATE_KEY: privateKey ?? workerEnv.GCP_PRIVATE_KEY
+  };
 }
 
-function encodeBase64Url(value: string | ArrayBuffer): string {
-  const bytes = typeof value === 'string' ? new TextEncoder().encode(value) : new Uint8Array(value);
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+function normalizePrivateKey(privateKey: string): string {
+  return privateKey.replace(/\\n/g, '\n').replace(/\r\n/g, '\n').trim();
 }
 
-function privateKeyToBuffer(pem: string): ArrayBuffer {
-  const normalized = pem.replace(/\\n/g, '\n');
-  const base64 = normalized
-    .replace('-----BEGIN PRIVATE KEY-----', '')
-    .replace('-----END PRIVATE KEY-----', '')
-    .replace(/\s/g, '');
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-  return bytes.buffer;
+function createJwtClient(email: string, privateKey: string): InstanceType<typeof google.auth.JWT> {
+  return new google.auth.JWT({
+    email,
+    key: normalizePrivateKey(privateKey),
+    scopes: [SHEETS_SCOPE]
+  });
 }
 
-async function createServiceAccountAssertion(email: string, privateKey: string): Promise<string> {
-  const issuedAt = Math.floor(Date.now() / 1000);
-  const header = encodeBase64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-  const claim = encodeBase64Url(
-    JSON.stringify({
-      iss: email,
-      scope: SHEETS_SCOPE,
-      aud: TOKEN_ENDPOINT,
-      iat: issuedAt,
-      exp: issuedAt + 3600
-    })
-  );
-  const unsignedToken = `${header}.${claim}`;
-  const key = await crypto.subtle.importKey(
-    'pkcs8',
-    privateKeyToBuffer(privateKey),
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(unsignedToken));
-  return `${unsignedToken}.${encodeBase64Url(signature)}`;
-}
-
-async function getServiceAccountAccessToken(): Promise<string> {
-  if (cachedAccessToken && cachedAccessToken.expiresAt > Date.now() + 60_000) {
-    return cachedAccessToken.value;
-  }
-
-  const { GOOGLE_SERVICE_ACCOUNT_EMAIL: email, GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY: privateKey } = getSheetsEnv();
-  if (!email || !privateKey) throw new Error('Google Sheets service account credentials are not configured');
-
-  const assertion = await createServiceAccountAssertion(email, privateKey);
-  const response = await fetch(TOKEN_ENDPOINT, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion
-    })
+async function fetchTicketRows(sheetId: string, tabName: string, email: string, privateKey: string): Promise<unknown[][]> {
+  const auth = createJwtClient(email, privateKey);
+  const sheets = google.sheets({ version: 'v4', auth });
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: sheetId,
+    range: tabName,
+    majorDimension: 'ROWS'
   });
 
-  const data = (await response.json()) as GoogleTokenResponse;
-  if (!response.ok || !data.access_token) {
-    throw new Error(`Google token request failed with status ${response.status}`);
-  }
-
-  const expiresIn = Math.max(data.expires_in ?? 3600, 60);
-  cachedAccessToken = {
-    value: data.access_token,
-    expiresAt: Date.now() + expiresIn * 1000
-  };
-  return data.access_token;
+  return (response.data.values ?? []) as unknown[][];
 }
 
-function normalizeHeader(value: string): string {
-  return value.trim().toLowerCase().replace(/[\s-]+/g, '_');
+function normalizeHeader(value: unknown): string {
+  return String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
 }
 
 function findColumn(headers: string[], candidates: string[]): number {
@@ -118,31 +69,15 @@ function findColumn(headers: string[], candidates: string[]): number {
   return headers.findIndex((header) => normalizedCandidates.has(header));
 }
 
-function valueAt(row: string[], index: number): string {
-  return index >= 0 ? `${row[index] ?? ''}`.trim() : '';
+function valueAt(row: readonly unknown[], index: number): string {
+  return index >= 0 ? String(row[index] ?? '').trim() : '';
 }
 
 function isInactive(status: string): boolean {
   return ['cancelled', 'canceled', 'closed', 'complete', 'completed', 'resolved'].includes(status.toLowerCase());
 }
 
-async function fetchTicketRows(sheetId: string, tabName: string): Promise<string[][]> {
-  const accessToken = await getServiceAccountAccessToken();
-  const range = encodeURIComponent(tabName);
-  const endpoint = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${range}`;
-  const response = await fetch(endpoint, {
-    headers: {
-      accept: 'application/json',
-      authorization: `Bearer ${accessToken}`
-    }
-  });
-
-  const data = (await response.json()) as SheetsValuesResponse;
-  if (!response.ok) throw new Error(`Google Sheets request failed with status ${response.status}`);
-  return data.values ?? [];
-}
-
-function mapRowsToTickets(rows: string[][], email: string): ServiceTicket[] {
+function mapRowsToTickets(rows: readonly unknown[][], email: string): ServiceTicket[] {
   const [headerRow, ...dataRows] = rows;
   if (!headerRow) return [];
 
@@ -193,13 +128,13 @@ function mapRowsToTickets(rows: string[][], email: string): ServiceTicket[] {
 }
 
 export async function getTicketsForUser(email: string): Promise<{ tickets: ServiceTicket[]; configured: boolean }> {
-  const { GOOGLE_SHEET_ID: sheetId, GOOGLE_SERVICE_ACCOUNT_EMAIL: serviceEmail, GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY: privateKey } = getSheetsEnv();
+  const { GOOGLE_SHEET_ID: sheetId, GOOGLE_SHEET_TAB: tabName, GCP_SERVICE_ACCOUNT_EMAIL: serviceEmail, GCP_PRIVATE_KEY: privateKey } = getSheetsEnv();
   const configured = Boolean(sheetId && serviceEmail && privateKey);
 
   if (!configured) return { tickets: [], configured: false };
 
   try {
-    const rows = await fetchTicketRows(sheetId!, getSheetsEnv().GOOGLE_SHEET_TAB?.trim() || DEFAULT_TAB);
+    const rows = await fetchTicketRows(sheetId!, tabName?.trim() || DEFAULT_TAB, serviceEmail!, privateKey!);
     return { tickets: mapRowsToTickets(rows, email), configured: true };
   } catch (error) {
     console.error('[sheets] Unable to load Service_Tickets:', error instanceof Error ? error.message : 'unknown error');
