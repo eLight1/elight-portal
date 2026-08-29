@@ -14,6 +14,10 @@ export default defineConfig({
     ttl: 60 * 60 * 24 * 30
   },
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss()],
+    server: {
+      // Arena's preview proxy uses dynamic *.e2b.app hostnames.
+      allowedHosts: ['.e2b.app']
+    }
   }
 });
