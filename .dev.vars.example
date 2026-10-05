@@ -1,0 +1,15 @@
+# Google OAuth credentials for local Cloudflare development.
+# Create a Web application OAuth client in Google Cloud Console.
+GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-client-secret"
+
+# Optional in local development. Set this to your deployed Worker origin in production.
+AUTH_ORIGIN="http://localhost:4321"
+
+# Google Sheets service account configuration.
+# Share the spreadsheet with this service-account email as a Viewer.
+GOOGLE_SHEET_ID="your-spreadsheet-id"
+GOOGLE_SHEET_TAB="Service_Tickets"
+GCP_SERVICE_ACCOUNT_EMAIL="sheets-reader@your-project.iam.gserviceaccount.com"
+# Keep the private key server-side. Paste the full PEM value here.
+GCP_PRIVATE_KEY="-----BEGIN PRIVATE KEY----- ... -----END PRIVATE KEY-----"

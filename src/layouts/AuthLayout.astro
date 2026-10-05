@@ -1,0 +1,62 @@
+---
+import Icon from '../components/Icon.astro';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+}
+
+const { title = 'Sign in | E Light Services' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="Secure client access for E Light Services." />
+    <link rel="icon" type="image/png" href="/brand/e-light-services-shield.png" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen bg-[#f6f9fc] text-[#102845]">
+    <div class="min-h-screen lg:grid lg:grid-cols-[minmax(360px,0.9fr)_minmax(500px,1.1fr)]">
+      <aside class="relative hidden overflow-hidden bg-[#071b39] px-10 py-10 text-white lg:flex lg:flex-col xl:px-16">
+        <div class="pointer-events-none absolute -right-40 top-16 h-96 w-96 rounded-full bg-[#1267a8]/30 blur-3xl"></div>
+        <div class="pointer-events-none absolute -bottom-40 -left-24 h-96 w-96 rounded-full bg-[#f3bf58]/10 blur-3xl"></div>
+        <a href="/" class="relative flex w-fit items-center rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#73d7ff]">
+          <img src="/brand/e-light-services-lockup-dark.png" alt="E Light Services" class="h-14 w-auto max-w-[300px] object-contain object-left transition hover:opacity-90" />
+        </a>
+
+        <div class="relative mt-auto max-w-lg pb-8">
+          <p class="text-[0.68rem] font-bold uppercase tracking-[0.2em] text-[#80d8ff]">Client workspace</p>
+          <h1 class="mt-5 text-4xl font-semibold leading-[1.08] tracking-[-0.045em] xl:text-5xl">Practical progress, with a clear next step.</h1>
+          <p class="mt-6 max-w-md text-sm leading-7 text-[#b7cce3]">Keep requests, device support and conversations in one private place. No jargon. No unnecessary complexity.</p>
+          <div class="mt-10 flex items-center gap-3 border-t border-white/15 pt-5 text-sm text-[#d8e7f4]">
+            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-[#123e72] text-[#7bd8ff]"><Icon name="shield" size={18} /></span>
+            <span><strong class="font-semibold text-white">Integrity and clarity</strong><br /><span class="text-xs text-[#94b2cf]">The E Light commitment</span></span>
+          </div>
+        </div>
+        <p class="relative text-xs text-[#7f9bb8]">Based in Lapaz, Accra · Remote support available</p>
+      </aside>
+
+      <main class="flex min-h-screen flex-col px-5 py-6 sm:px-8 sm:py-10 lg:px-14 xl:px-24">
+        <div class="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center">
+          <a href="/" class="mx-auto flex items-center gap-3 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1267a8] lg:mx-0">
+            <span class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-[#0d3568] shadow-[0_8px_20px_rgba(7,27,57,0.12)] lg:hidden">
+              <img src="/brand/e-light-services-shield.png" alt="" class="h-10 w-10" />
+            </span>
+            <span class="leading-none lg:hidden">
+              <span class="block text-[0.7rem] font-bold tracking-[0.22em] text-[#102845]">E LIGHT</span>
+              <span class="mt-1 block text-[0.62rem] font-medium tracking-[0.2em] text-[#1267a8]">SERVICES</span>
+            </span>
+          </a>
+          <slot />
+        </div>
+        <footer class="mx-auto mt-10 w-full max-w-lg text-center text-xs text-[#8094a8] lg:mx-0 lg:text-left">
+          <p>© {new Date().getFullYear()} E Light Services · <a href="https://elightservices.com" class="font-semibold text-[#54708e] hover:text-[#1267a8]">elightservices.com</a></p>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>

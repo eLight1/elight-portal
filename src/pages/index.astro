@@ -1,0 +1,7 @@
+---
+export const prerender = false;
+
+const user = await Astro.session?.get('user');
+
+return Astro.redirect(user ? '/dashboard' : '/login');
+---
